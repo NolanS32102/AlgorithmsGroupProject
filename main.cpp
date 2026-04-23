@@ -168,7 +168,7 @@ bool legalMove(Racer& r, const set<pair<int,int> >& walls){
 
 	if(cell1 == cell2) return true;
 	if(p1.x < 0 || p1.y < 0 || p2.x < 0 || p2.y < 0) r.die();
-	if(p1.x >= row || p1.y >= col || p2.x >= row || p2.y >= col) r.die();
+	if(p1.x >= col || p1.y >= row || p2.x >= col || p2.y >= row) r.die();
 
 	flag =  (walls.find(make_pair(cell1,cell2)) != walls.end());
 	if(!flag){
@@ -189,7 +189,7 @@ bool legalMove(Racer* r, const set<pair<int,int> >& walls){
 
 	if(cell1 == cell2) return true;
 	if(p1.x < 0 || p1.y < 0 || p2.x < 0 || p2.y < 0) return 1;
-	if(p1.x >= row || p1.y >= col || p2.x >= row || p2.y >= col) return 1;
+	if(p1.x >= col || p1.y >= row || p2.x >= col || p2.y >= row) return 1;
 
 	flag =  (walls.find(make_pair(cell1,cell2)) != walls.end());
 	if(!flag){
