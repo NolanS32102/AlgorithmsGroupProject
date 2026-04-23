@@ -28,6 +28,7 @@ private:
     static const bool DEBUG_DFS = true;
 
     static vector<visitedPoint> maze;
+    static int numRuns;
 
     bool samePoint(const point& a, const point& b) {
         return a.x == b.x && a.y == b.y;
@@ -53,9 +54,16 @@ private:
     }
 
 public:
-    RaceCarDriver(Racer* p = nullptr): car{p}{}
+    RaceCarDriver(Racer* p = nullptr): car{p}{
+        numRuns += 1;
+    }
 
     DIRECTION nextMoveTeamThree() {
+
+        if (numRuns == 2) {
+            
+        }
+
         if (car == nullptr) return EAST;
 
         static int step = 0;
