@@ -11,13 +11,20 @@
 #include "Racer.h"
 #include <set>
 #include <stack>
+#include <vector>
 using namespace std;
 
 class RaceCarDriver{
 private:
     Racer* car;
-    stack<point> path;
-    set<pair<int,int>> visited;
+    static stack<point> path;
+    static set<pair<int,int>> visited;
+    static vector<point> solvedPath;
+    static bool solutionReady;
+    static size_t replayIndex;
+    static point lastPos;
+
+    vector<DIRECTION> const DIRECTIONS = {EAST, SOUTH, WEST, NORTH};
 
     bool samePoint(const point& a, const point& b) {
         return a.x == b.x && a.y == b.y;
@@ -42,69 +49,99 @@ private:
         return p;
     }
 
+    bool atStart(const point& p) {
+        return p.x == 0 && p.y == 0;
+    }
+
+    void saveCurrentPathAsSolution() {
+        stack<point> temp = path;
+        vector<point> rev;
+        while (!temp.empty()) {
+            rev.push_back(temp.top());
+            temp.pop();
+        }
+
+        solvedPath.clear();
+        for (int i = (int)rev.size() - 1; i >= 0; --i) {
+            solvedPath.push_back(rev[i]);
+        }
+
+        solutionReady = true;
+        replayIndex = 1;
+    }
+
+    void resetDfsState() {
+        while (!path.empty()) path.pop();
+        visited.clear();
+    }
+
 public:
     RaceCarDriver(Racer* p = nullptr): car{p} {}
 
     DIRECTION nextMoveTeamThree() {
+        if (car == nullptr) return EAST;
 
         point current = car->getLocation();
 
-        // THIS MEANS WE ARE STARTING A NEW RUN
-        if (current.x == 0 && current.y == 0 && !path.empty() && !samePoint(path.top(), current)) {
-            // numRuns += 1
-            while (!path.empty()) path.pop();
-            visited.clear();
+        // NEW RUN
+        if (atStart(current) && !atStart(lastPos)) {
+            // Case 1: We found the solution in the last position, so we are saving the last path
+            //         as our solution path for our next iteration.
+            if (!solutionReady && !path.empty() && !atStart(path.top())) saveCurrentPathAsSolution();
+            // Case 2: Either we failed in the iteration (hopefully doesn't happen), or we just iterated
+            //         through the correct path
+            else resetDfsState();
         }
 
+        // Run #2-3, we already have the solution, so we just iterate through it
+        if (solutionReady && replayIndex < solvedPath.size()) {
+            DIRECTION d = directionTo(current, solvedPath[replayIndex]);
+            replayIndex++;
+            lastPos = current;
+            return d;
+        }
+
+        // Run #1:
         if (path.empty()) {
+            // First cell
             path.push(current);
             visited.emplace(current.x, current.y);
         }
 
-        if (!car->look(EAST)) {
-            point next = nextPoint(current, EAST);
-            if (inBounds(next) && visited.count({next.x, next.y}) == 0) {
-                path.push(next);
-                visited.emplace(next.x, next.y);
-                return EAST;
+        // Check each direction, traverse if its available
+        for (DIRECTION dir: DIRECTIONS) {
+            if (!car->look(dir)) {
+                point next = nextPoint(current, dir);
+                // Checks in bounds & not already visited
+                if (inBounds(next) && visited.count({next.x, next.y}) == 0) {
+                    path.push(next);
+                    visited.emplace(next.x, next.y);
+                    lastPos = current;
+                    return dir;
+                }
             }
         }
 
-        if (!car->look(SOUTH)) {
-            point next = nextPoint(current, SOUTH);
-            if (inBounds(next) && visited.count({next.x, next.y}) == 0) {
-                path.push(next);
-                visited.emplace(next.x, next.y);
-                return SOUTH;
-            }
-        }
-
-        if (!car->look(WEST)) {
-            point next = nextPoint(current, WEST);
-            if (inBounds(next) && visited.count({next.x, next.y}) == 0) {
-                path.push(next);
-                visited.emplace(next.x, next.y);
-                return WEST;
-            }
-        }
-
-        if (!car->look(NORTH)) {
-            point next = nextPoint(current, NORTH);
-            if (inBounds(next) && visited.count({next.x, next.y}) == 0) {
-                path.push(next);
-                visited.emplace(next.x, next.y);
-                return NORTH;
-            }
-        }
-
+        // Backtracking case
         if (path.size() > 1) {
             path.pop();
             point parent = path.top();
+            lastPos = current;
             return directionTo(current, parent);
         }
 
+        // We failed ;(
+        lastPos = current;
+        car->die();
         return EAST;
     }
 };
+
+stack<point> RaceCarDriver::path;
+set<pair<int,int>> RaceCarDriver::visited;
+vector<point> RaceCarDriver::solvedPath;
+bool RaceCarDriver::solutionReady = false;
+size_t RaceCarDriver::replayIndex = 0;
+point RaceCarDriver::lastPos = point(-1, -1);
 
 #endif /* RACECARDRIVER_H_ */
