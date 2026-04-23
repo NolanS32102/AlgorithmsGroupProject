@@ -49,7 +49,9 @@ public:
 
         point current = car->getLocation();
 
+        // THIS MEANS WE ARE STARTING A NEW RUN
         if (current.x == 0 && current.y == 0 && !path.empty() && !samePoint(path.top(), current)) {
+            // numRuns += 1
             while (!path.empty()) path.pop();
             visited.clear();
         }
@@ -100,7 +102,7 @@ public:
             point parent = path.top();
             return directionTo(current, parent);
         }
-        
+
         return EAST;
     }
 };
