@@ -101,6 +101,7 @@ int i = 1;
 clock.reset();
     while (!g.getQuit()  && runCount < 3)
     {
+		// g.Sleep(200);
 
 		if(robot.racing() and !robot.Finished()){
 
@@ -121,7 +122,7 @@ clock.reset();
 				legalMove(robot, walls);
 				robot.draw(g);
 				g.update();
-				//g.Sleep(500);
+				// g.Sleep(10000);
 
 			}
 
