@@ -12,6 +12,7 @@
 #include <set>
 #include <stack>
 #include <vector>
+#include <algorithm>
 using namespace std;
 
 class RaceCarDriver{
@@ -19,10 +20,13 @@ private:
     Racer* car;
     static stack<point> path;
     static set<pair<int,int>> visited;
-    static vector<point> solvedPath;
+    static vector<point> firstPath;
+    static vector<point> secondPath;
+    static vector<point> bestPath;
     static bool solutionReady;
     static size_t replayIndex;
     static point lastPos;
+    static int attemptNumber;
 
     vector<DIRECTION> const DIRECTIONS = {EAST, SOUTH, WEST, NORTH};
 
@@ -61,9 +65,17 @@ private:
             temp.pop();
         }
 
-        solvedPath.clear();
-        for (int i = (int)rev.size() - 1; i >= 0; --i) {
-            solvedPath.push_back(rev[i]);
+        reverse(rev.begin(), rev.end());
+
+        if (attemptNumber == 1){
+            firstPath = rev;
+            bestPath = firstPath;
+        }
+        else if (attemptNumber == 2){
+            secondPath = rev;
+            if (secondPath.size() < firstPath.size() && !secondPath.empty()){
+
+            }
         }
 
         solutionReady = true;
@@ -73,6 +85,14 @@ private:
     void resetDfsState() {
         while (!path.empty()) path.pop();
         visited.clear();
+    }
+    
+    vector<DIRECTION> getDirections(){
+        vector<DIRECTION> d = DIRECTIONS;
+        if (attemptNumber == 2){
+            reverse(d.begin(), d.end());
+        }
+        return d;
     }
 
 public:
@@ -84,32 +104,31 @@ public:
         point current = car->getLocation();
 
         // NEW RUN
-        if (atStart(current) && !atStart(lastPos)) {
-            // Case 1: We found the solution in the last position, so we are saving the last path
-            //         as our solution path for our next iteration.
-            if (!solutionReady && !path.empty() && !atStart(path.top())) saveCurrentPathAsSolution();
-            // Case 2: Either we failed in the iteration (hopefully doesn't happen), or we just iterated
-            //         through the correct path
-            else resetDfsState();
+        if (atStart(current) && !atStart(lastPos) && lastPos.x != -1) {
+            if (!path.empty()){
+                saveCurrentPathAsSolution();
+            }
+            resetDfsState();
+            attemptNumber++;
         }
 
-        // Run #2-3, we already have the solution, so we just iterate through it
-        if (solutionReady && replayIndex < solvedPath.size()) {
-            DIRECTION d = directionTo(current, solvedPath[replayIndex]);
+        // Run #3, we already have the solution, so we just iterate through it
+        if (attemptNumber >= 3 && solutionReady && replayIndex < bestPath.size()) {
+            DIRECTION d = directionTo(current, bestPath[replayIndex]);
             replayIndex++;
             lastPos = current;
             return d;
         }
 
-        // Run #1:
+        // Run #1-2:
         if (path.empty()) {
             // First cell
             path.push(current);
             visited.emplace(current.x, current.y);
         }
 
-        // Check each direction, traverse if its available
-        for (DIRECTION dir: DIRECTIONS) {
+        // Check each direction, traverse if it's available
+        for (DIRECTION dir: getDirections()) {
             if (!car->look(dir)) {
                 point next = nextPoint(current, dir);
                 // Checks in bounds & not already visited
@@ -139,9 +158,12 @@ public:
 
 stack<point> RaceCarDriver::path;
 set<pair<int,int>> RaceCarDriver::visited;
-vector<point> RaceCarDriver::solvedPath;
+vector<point> RaceCarDriver::firstPath;
+vector<point> RaceCarDriver::secondPath;
+vector<point> RaceCarDriver::bestPath;
 bool RaceCarDriver::solutionReady = false;
 size_t RaceCarDriver::replayIndex = 0;
+int RaceCarDriver::attemptNumber = 1;
 point RaceCarDriver::lastPos = point(-1, -1);
 
 #endif /* RACECARDRIVER_H_ */
