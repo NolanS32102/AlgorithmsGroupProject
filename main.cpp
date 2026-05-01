@@ -101,7 +101,6 @@ int i = 1;
 clock.reset();
     while (!g.getQuit()  && runCount < 3)
     {
-		// g.Sleep(200);
 
 		if(robot.racing() and !robot.Finished()){
 
