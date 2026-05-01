@@ -12,6 +12,8 @@
 #include <set>
 #include <stack>
 #include <vector>
+#include <optional>
+
 using namespace std;
 
 class RaceCarDriver{
@@ -23,6 +25,7 @@ private:
     static bool solutionReady;
     static size_t replayIndex;
     static point lastPos;
+    static DIRECTION lastDir;
 
     vector<DIRECTION> const DIRECTIONS = {EAST, SOUTH, WEST, NORTH};
 
@@ -75,6 +78,25 @@ private:
         visited.clear();
     }
 
+    // Will return a direction only if its valid
+    bool pickDir(DIRECTION dir, point current, DIRECTION& outDir) {
+    if (!car->look(dir)) {
+        point next = nextPoint(current, dir);
+
+        if (inBounds(next) && visited.count({next.x, next.y}) == 0) {
+            path.push(next);
+            visited.emplace(next.x, next.y);
+
+            lastPos = current;
+            lastDir = dir;
+
+            outDir = dir;
+            return true;
+        }
+    }
+    return false;
+}
+
 public:
     RaceCarDriver(Racer* p = nullptr): car{p} {}
 
@@ -93,6 +115,13 @@ public:
             else resetDfsState();
         }
 
+        // Run #1:
+        if (path.empty()) {
+            // First cell
+            path.push(current);
+            visited.emplace(current.x, current.y);
+        }
+
         // Run #2-3, we already have the solution, so we just iterate through it
         if (solutionReady && replayIndex < solvedPath.size()) {
             DIRECTION d = directionTo(current, solvedPath[replayIndex]);
@@ -101,24 +130,21 @@ public:
             return d;
         }
 
-        // Run #1:
-        if (path.empty()) {
-            // First cell
-            path.push(current);
-            visited.emplace(current.x, current.y);
+        DIRECTION dir;
+
+        // 1. Try continuing forward first (no turn)
+        if (pickDir(lastDir, current, dir)) {
+            lastPos = current;
+            return dir;
         }
 
-        // Check each direction, traverse if its available
-        for (DIRECTION dir: DIRECTIONS) {
-            if (!car->look(dir)) {
-                point next = nextPoint(current, dir);
-                // Checks in bounds & not already visited
-                if (inBounds(next) && visited.count({next.x, next.y}) == 0) {
-                    path.push(next);
-                    visited.emplace(next.x, next.y);
-                    lastPos = current;
-                    return dir;
-                }
+        for (DIRECTION d : DIRECTIONS) {
+            if (d == lastDir) continue;
+
+            DIRECTION out;
+            if (pickDir(d, current, out)) {
+                lastPos = current;
+                return out;
             }
         }
 
@@ -143,5 +169,6 @@ vector<point> RaceCarDriver::solvedPath;
 bool RaceCarDriver::solutionReady = false;
 size_t RaceCarDriver::replayIndex = 0;
 point RaceCarDriver::lastPos = point(-1, -1);
+DIRECTION RaceCarDriver::lastDir = EAST;
 
 #endif /* RACECARDRIVER_H_ */
