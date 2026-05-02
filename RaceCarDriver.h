@@ -16,9 +16,16 @@
 
 using namespace std;
 
+enum State {
+        DFS,
+        REPLAY
+    };
+
 class RaceCarDriver{
 private:
+
     Racer* car;
+    static State mode;
 
     // DFS state
     static stack<point> path;
@@ -28,8 +35,6 @@ private:
     static vector<DIRECTION> solvedDirs;
 
     // Replay state for run 2 & 3
-    static bool hasSolution;
-    static bool replayMode;
     static size_t replayIndex;
 
     // Tracking
@@ -76,18 +81,24 @@ private:
 
         solvedDirs.clear();
 
-        for (size_t i = rev.size(); i-- > 1; ) {
-            solvedDirs.push_back(directionTo(rev[i], rev[i - 1]));
+        for (int i = (int)rev.size() - 1; i > 0; i--) {
+            solvedDirs.push_back(
+                directionTo(rev[i], rev[i - 1])
+            );
         }
 
-        hasSolution = true;
-        replayMode = true;
-        replayIndex = 0;
+        cout << "solvedDirs output (size=" << solvedDirs.size() << ")" << endl;
+        cout << "[";
+        for (int i = 0; i < solvedDirs.size(); i++) {
+            cout << solvedDirs[i] << ", ";
+        }
+        cout << "]" << endl;
     }
 
     void resetDfsState() {
         while (!path.empty()) path.pop();
         visited.clear();
+        replayIndex = 0;
     }
 
     // DFS Attempt
@@ -114,37 +125,37 @@ public:
     RaceCarDriver(Racer* p = nullptr): car{p} {}
 
     DIRECTION nextMoveTeamThree() {
-        if (car == nullptr) return EAST;
-
         point current = car->getLocation();
 
-        // NEW RUN
-        if (atStart(current) && !atStart(lastPos)) {
-            if (replayMode) replayIndex = 0; // Happens on run 3 where we are in replaymode, but we need to reset replayIndex
-            else {
-                // Case 1: We found the solution in the last position, so we are saving the last path
-                //         as our solution path for our next iteration.
-                if (!replayMode && !path.empty() && !atStart(path.top())) {
-                    saveCurrentPathAsSolution();
+        if (mode == DFS && atStart(current) && !atStart(lastPos)) {
+            if (path.size() > 1) {
+                if (atStart(path.top())) {
+                    path.pop();
                 }
-                // Case 2: Either we failed in the iteration (hopefully doesn't happen), or we just iterated
-                //         through the correct path
-                else resetDfsState();
+                saveCurrentPathAsSolution();
+                if (!solvedDirs.empty()) {
+                    mode = REPLAY;
+                    replayIndex = 0;
+                    lastPos = current;
+                }
+                else {
+                    resetDfsState();
+                    lastPos = current;
+                }
             }
         }
 
-        // Run #2-3, we already have the solution, so we just iterate through it
-        if (replayMode && replayIndex < solvedDirs.size()) {
-
-            DIRECTION d = solvedDirs[replayIndex];
-            replayIndex++;
+        if (mode == REPLAY) {
+            if (replayIndex >= solvedDirs.size()) {
+                replayIndex = 0;
+            }
+            DIRECTION dir = solvedDirs[replayIndex++];
             lastPos = current;
-            return d;
+            return dir;
         }
 
-        // Run #1:
+        // DFS
         if (path.empty()) {
-            // First cell
             path.push(current);
             visited.emplace(current.x, current.y);
         }
@@ -186,8 +197,7 @@ public:
 stack<point> RaceCarDriver::path;
 set<pair<int,int>> RaceCarDriver::visited;
 vector<DIRECTION> RaceCarDriver::solvedDirs;
-bool RaceCarDriver::replayMode = false;
-bool RaceCarDriver::hasSolution = false;
+State RaceCarDriver::mode = DFS;
 size_t RaceCarDriver::replayIndex = 0;
 point RaceCarDriver::lastPos = point(-1, -1);
 DIRECTION RaceCarDriver::lastDir = EAST;
