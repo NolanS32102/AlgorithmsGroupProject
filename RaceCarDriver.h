@@ -13,20 +13,34 @@
 #include <stack>
 #include <vector>
 #include <algorithm>
+#include <optional>
+
 using namespace std;
 
 class RaceCarDriver{
 private:
     Racer* car;
+
+    // DFS state
     static stack<point> path;
     static set<pair<int,int>> visited;
     static vector<point> firstPath;
     static vector<point> secondPath;
     static vector<point> bestPath;
     static bool solutionReady;
+
+    // Solution storage for run 2 & 3
+    static vector<DIRECTION> solvedDirs;
+
+    // Replay state for run 2 & 3
+    static bool hasSolution;
+    static bool replayMode;
     static size_t replayIndex;
+
+    // Tracking
     static point lastPos;
     static int attemptNumber;
+    static DIRECTION lastDir;
 
     vector<DIRECTION> const DIRECTIONS_ORIGINAL = {EAST, SOUTH, WEST, NORTH};
     vector<DIRECTION> const DIRECTIONS_REVERSED = {SOUTH, WEST, NORTH, EAST};
@@ -61,6 +75,7 @@ private:
     void saveCurrentPathAsSolution() {
         stack<point> temp = path;
         vector<point> rev;
+
         while (!temp.empty()) {
             rev.push_back(temp.top());
             temp.pop();
@@ -77,10 +92,15 @@ private:
             if (secondPath.size() < firstPath.size() && !secondPath.empty()){
 
             }
+        solvedDirs.clear();
+
+        for (size_t i = rev.size(); i-- > 1; ) {
+            solvedDirs.push_back(directionTo(rev[i], rev[i - 1]));
         }
 
-        solutionReady = true;
-        replayIndex = 1;
+        hasSolution = true;
+        replayMode = true;
+        replayIndex = 0;
     }
 
     void resetDfsState() {
@@ -94,6 +114,26 @@ private:
         }
         return DIRECTIONS_ORIGINAL;
     }
+
+    // DFS Attempt
+    bool pickDir(DIRECTION dir, point current, DIRECTION& outDir) {
+        if (!car->look(dir)) {
+            point next = nextPoint(current, dir);
+
+            // Visited check ensures DFS hasn't already been there
+            if (inBounds(next) && visited.count({next.x, next.y}) == 0) {
+                path.push(next);
+                visited.emplace(next.x, next.y);
+
+                lastPos = current;
+                lastDir = dir;
+                outDir = dir;
+
+                return true;
+            }
+        }
+        return false;
+}
 
 public:
     RaceCarDriver(Racer* p = nullptr): car{p} {}
@@ -165,5 +205,6 @@ bool RaceCarDriver::solutionReady = false;
 size_t RaceCarDriver::replayIndex = 0;
 int RaceCarDriver::attemptNumber = 1;
 point RaceCarDriver::lastPos = point(-1, -1);
+DIRECTION RaceCarDriver::lastDir = EAST;
 
 #endif /* RACECARDRIVER_H_ */
