@@ -28,7 +28,8 @@ private:
     static point lastPos;
     static int attemptNumber;
 
-    vector<DIRECTION> const DIRECTIONS = {EAST, SOUTH, WEST, NORTH};
+    vector<DIRECTION> const DIRECTIONS_ORIGINAL = {EAST, SOUTH, WEST, NORTH};
+    vector<DIRECTION> const DIRECTIONS_REVERSED = {SOUTH, WEST, NORTH, EAST};
 
     bool samePoint(const point& a, const point& b) {
         return a.x == b.x && a.y == b.y;
@@ -88,11 +89,10 @@ private:
     }
     
     vector<DIRECTION> getDirections(){
-        vector<DIRECTION> d = DIRECTIONS;
         if (attemptNumber == 2){
-            reverse(d.begin(), d.end());
+            return DIRECTIONS_REVERSED;
         }
-        return d;
+        return DIRECTIONS_ORIGINAL;
     }
 
 public:
