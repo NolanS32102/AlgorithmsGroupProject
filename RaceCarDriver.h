@@ -12,7 +12,6 @@
 #include <set>
 #include <stack>
 #include <vector>
-#include <algorithm>
 #include <optional>
 
 using namespace std;
@@ -24,10 +23,6 @@ private:
     // DFS state
     static stack<point> path;
     static set<pair<int,int>> visited;
-    static vector<point> firstPath;
-    static vector<point> secondPath;
-    static vector<point> bestPath;
-    static bool solutionReady;
 
     // Solution storage for run 2 & 3
     static vector<DIRECTION> solvedDirs;
@@ -39,11 +34,9 @@ private:
 
     // Tracking
     static point lastPos;
-    static int attemptNumber;
     static DIRECTION lastDir;
 
-    vector<DIRECTION> const DIRECTIONS_ORIGINAL = {EAST, SOUTH, WEST, NORTH};
-    vector<DIRECTION> const DIRECTIONS_REVERSED = {SOUTH, WEST, NORTH, EAST};
+    vector<DIRECTION> const DIRECTIONS = {EAST, SOUTH, WEST, NORTH};
 
     bool samePoint(const point& a, const point& b) {
         return a.x == b.x && a.y == b.y;
@@ -81,17 +74,6 @@ private:
             temp.pop();
         }
 
-        reverse(rev.begin(), rev.end());
-
-        if (attemptNumber == 1){
-            firstPath = rev;
-            bestPath = firstPath;
-        }
-        else if (attemptNumber == 2){
-            secondPath = rev;
-            if (secondPath.size() < firstPath.size() && !secondPath.empty()){
-
-            }
         solvedDirs.clear();
 
         for (size_t i = rev.size(); i-- > 1; ) {
@@ -106,13 +88,6 @@ private:
     void resetDfsState() {
         while (!path.empty()) path.pop();
         visited.clear();
-    }
-    
-    vector<DIRECTION> getDirections(){
-        if (attemptNumber == 2){
-            return DIRECTIONS_REVERSED;
-        }
-        return DIRECTIONS_ORIGINAL;
     }
 
     // DFS Attempt
@@ -144,40 +119,52 @@ public:
         point current = car->getLocation();
 
         // NEW RUN
-        if (atStart(current) && !atStart(lastPos) && lastPos.x != -1) {
-            if (!path.empty()){
-                saveCurrentPathAsSolution();
+        if (atStart(current) && !atStart(lastPos)) {
+            if (replayMode) replayIndex = 0; // Happens on run 3 where we are in replaymode, but we need to reset replayIndex
+            else {
+                // Case 1: We found the solution in the last position, so we are saving the last path
+                //         as our solution path for our next iteration.
+                if (!replayMode && !path.empty() && !atStart(path.top())) {
+                    saveCurrentPathAsSolution();
+                }
+                // Case 2: Either we failed in the iteration (hopefully doesn't happen), or we just iterated
+                //         through the correct path
+                else resetDfsState();
             }
-            resetDfsState();
-            attemptNumber++;
         }
 
-        // Run #3, we already have the solution, so we just iterate through it
-        if (attemptNumber >= 3 && solutionReady && replayIndex < bestPath.size()) {
-            DIRECTION d = directionTo(current, bestPath[replayIndex]);
+        // Run #2-3, we already have the solution, so we just iterate through it
+        if (replayMode && replayIndex < solvedDirs.size()) {
+
+            DIRECTION d = solvedDirs[replayIndex];
             replayIndex++;
             lastPos = current;
             return d;
         }
 
-        // Run #1-2:
+        // Run #1:
         if (path.empty()) {
             // First cell
             path.push(current);
             visited.emplace(current.x, current.y);
         }
 
-        // Check each direction, traverse if it's available
-        for (DIRECTION dir: getDirections()) {
-            if (!car->look(dir)) {
-                point next = nextPoint(current, dir);
-                // Checks in bounds & not already visited
-                if (inBounds(next) && visited.count({next.x, next.y}) == 0) {
-                    path.push(next);
-                    visited.emplace(next.x, next.y);
-                    lastPos = current;
-                    return dir;
-                }
+        DIRECTION dir;
+
+        // 1. Try continuing forward first (no turn)
+        if (pickDir(lastDir, current, dir)) {
+            lastPos = current;
+            return dir;
+        }
+
+        // 2. If not, then we look at all other directions
+        for (DIRECTION d : DIRECTIONS) {
+            if (d == lastDir) continue;
+
+            DIRECTION out;
+            if (pickDir(d, current, out)) {
+                lastPos = current;
+                return out;
             }
         }
 
@@ -198,12 +185,10 @@ public:
 
 stack<point> RaceCarDriver::path;
 set<pair<int,int>> RaceCarDriver::visited;
-vector<point> RaceCarDriver::firstPath;
-vector<point> RaceCarDriver::secondPath;
-vector<point> RaceCarDriver::bestPath;
-bool RaceCarDriver::solutionReady = false;
+vector<DIRECTION> RaceCarDriver::solvedDirs;
+bool RaceCarDriver::replayMode = false;
+bool RaceCarDriver::hasSolution = false;
 size_t RaceCarDriver::replayIndex = 0;
-int RaceCarDriver::attemptNumber = 1;
 point RaceCarDriver::lastPos = point(-1, -1);
 DIRECTION RaceCarDriver::lastDir = EAST;
 

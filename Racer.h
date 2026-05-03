@@ -20,7 +20,7 @@ class Racer{
 
 private:
 	point location, prevLocation;
-	struct color color;
+	color color;
 	int   size;
 	bool  alive;
 	bool  finished;
