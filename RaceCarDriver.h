@@ -70,34 +70,10 @@ private:
         return p.x == 0 && p.y == 0;
     }
 
-    void saveCurrentPathAsSolution() {
-        stack<point> temp = path;
-        vector<point> rev;
-
-        while (!temp.empty()) {
-            rev.push_back(temp.top());
-            temp.pop();
-        }
-
-        solvedDirs.clear();
-
-        for (int i = (int)rev.size() - 1; i > 0; i--) {
-            solvedDirs.push_back(
-                directionTo(rev[i], rev[i - 1])
-            );
-        }
-
-        cout << "solvedDirs output (size=" << solvedDirs.size() << ")" << endl;
-        cout << "[";
-        for (int i = 0; i < solvedDirs.size(); i++) {
-            cout << solvedDirs[i] << ", ";
-        }
-        cout << "]" << endl;
-    }
-
     void resetDfsState() {
         while (!path.empty()) path.pop();
         visited.clear();
+        solvedDirs.clear();
         replayIndex = 0;
     }
 
@@ -114,6 +90,7 @@ private:
                 lastPos = current;
                 lastDir = dir;
                 outDir = dir;
+                solvedDirs.push_back(dir);
 
                 return true;
             }
@@ -131,8 +108,10 @@ public:
             if (path.size() > 1) {
                 if (atStart(path.top())) {
                     path.pop();
+                    if (!solvedDirs.empty()) {
+                        solvedDirs.pop_back();
+                    }
                 }
-                saveCurrentPathAsSolution();
                 if (!solvedDirs.empty()) {
                     mode = REPLAY;
                     replayIndex = 0;
@@ -182,6 +161,9 @@ public:
         // Backtracking case
         if (path.size() > 1) {
             path.pop();
+            if (!solvedDirs.empty()) {
+                solvedDirs.pop_back();
+            }
             point parent = path.top();
             lastPos = current;
             return directionTo(current, parent);
