@@ -22,7 +22,7 @@ private:
     static set<pair<int,int>> visited;
     static vector<point> firstPath;
     static vector<point> secondPath;
-    static vector<point> bestPath;
+    static vector<point>* bestPath;
     static bool solutionReady;
     static size_t replayIndex;
     static point lastPos;
@@ -70,12 +70,12 @@ private:
 
         if (attemptNumber == 1){
             firstPath = rev;
-            bestPath = firstPath;
+            bestPath = &firstPath;
         }
         else if (attemptNumber == 2){
             secondPath = rev;
             if (secondPath.size() < firstPath.size() && !secondPath.empty()){
-
+                bestPath = &secondPath;
             }
         }
 
@@ -89,6 +89,7 @@ private:
     }
     
     vector<DIRECTION> getDirections(){
+        // run second attempt with different set of directions
         if (attemptNumber == 2){
             return DIRECTIONS_REVERSED;
         }
@@ -113,8 +114,8 @@ public:
         }
 
         // Run #3, we already have the solution, so we just iterate through it
-        if (attemptNumber >= 3 && solutionReady && replayIndex < bestPath.size()) {
-            DIRECTION d = directionTo(current, bestPath[replayIndex]);
+        if (attemptNumber >= 3 && solutionReady && replayIndex < bestPath->size()) {
+            DIRECTION d = directionTo(current, bestPath->at(replayIndex));
             replayIndex++;
             lastPos = current;
             return d;
@@ -160,7 +161,7 @@ stack<point> RaceCarDriver::path;
 set<pair<int,int>> RaceCarDriver::visited;
 vector<point> RaceCarDriver::firstPath;
 vector<point> RaceCarDriver::secondPath;
-vector<point> RaceCarDriver::bestPath;
+vector<point>* RaceCarDriver::bestPath = nullptr;
 bool RaceCarDriver::solutionReady = false;
 size_t RaceCarDriver::replayIndex = 0;
 int RaceCarDriver::attemptNumber = 1;
