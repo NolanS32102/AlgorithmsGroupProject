@@ -1,5 +1,5 @@
 /*
-* RaceCarDriver.h
+* RaceCarDriverBFS.h
  *
  *  Created on: Spring, 2026
  *      Author: bill_booth
@@ -26,10 +26,6 @@
  private:
  
      Racer* car;
-     // First call to nextMoveTeamThree: treat current cell as maze start for BFS 
-     point explorationStart;
-     bool explorationStartSet;
-
      static State mode;
  
      // BFS state
@@ -97,7 +93,6 @@
          visited.clear();
          solvedDirs.clear();
          replayIndex = 0;
-         explorationStartSet = false;
          for (int y = 0; y < row; y++) {
              for (int x = 0; x < col; x++) {
                  for (int k = 0; k < 4; k++) {
@@ -124,15 +119,16 @@
          }
      }
  
-     // BFS from explorationStart (set on first nextMoveTeamThree call) — no assumed goal coordinates.
+     // BFS from start only — no assumed goal coordinates.
      void bfsDistFromStart() {
          clearDist();
-         if (!explorationStartSet || !inBounds(explorationStart))
+         const point start(0, 0);
+         if (!inBounds(start))
              return;
  
          queue<point> q;
-         distScratch[explorationStart.y][explorationStart.x] = 0;
-         q.push(explorationStart);
+         distScratch[0][0] = 0;
+         q.push(start);
  
          while (!q.empty()) {
              point u = q.front();
@@ -193,15 +189,10 @@
      }
  
  public:
-     RaceCarDriver(Racer* p = nullptr): car{p}, explorationStartSet{false} {}
+     RaceCarDriver(Racer* p = nullptr): car{p} {}
  
      DIRECTION nextMoveTeamThree() {
          point current = car->getLocation();
- 
-         if (!explorationStartSet) {
-             explorationStart = current;
-             explorationStartSet = true;
-         }
  
          if (mode == BFS && atStart(current) && !atStart(lastPos)) {
              if (path.size() > 1) {
