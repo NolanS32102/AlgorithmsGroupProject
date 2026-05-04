@@ -1,4 +1,16 @@
 /*
+* Author: Karter Sanamo, Christine Seng, Georgia Rushing,
+* Matthew Peterson, Nolan Schirripa
+* Assignment Title: Group Project
+* Assignment Description: driver for nextMoveTeamThree
+* function that solves the maze
+* Due Date: 5/03/2026
+* Date Created: 4/23/2026
+* Date Last Modified: 5/03/2026
+*/
+
+
+/*
 * RaceCarDriver.h
  *
  *  Created on: Spring, 2026
