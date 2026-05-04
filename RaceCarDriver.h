@@ -20,9 +20,9 @@ private:
     Racer* car;
     static stack<point> path;
     static set<pair<int,int>> visited;
-    static vector<point> firstPath;
-    static vector<point> secondPath;
-    static vector<point>* bestPath;
+    static vector<DIRECTION> firstDirs;
+    static vector<DIRECTION> secondDirs;
+    static vector<DIRECTION>* bestDirs;
     static bool solutionReady;
     static size_t replayIndex;
     static point lastPos;
@@ -60,27 +60,31 @@ private:
 
     void saveCurrentPathAsSolution() {
         stack<point> temp = path;
-        vector<point> rev;
+        vector<DIRECTION> rev;
         while (!temp.empty()) {
-            rev.push_back(temp.top());
+            point parent = temp.top();
             temp.pop();
+
+            if (!temp.empty()) {
+                rev.push_back(directionTo(temp.top(), parent));
+            }
         }
 
         reverse(rev.begin(), rev.end());
 
         if (attemptNumber == 1){
-            firstPath = rev;
-            bestPath = &firstPath;
+            firstDirs = rev;
+            bestDirs = &firstDirs;
         }
         else if (attemptNumber == 2){
-            secondPath = rev;
-            if (secondPath.size() < firstPath.size() && !secondPath.empty()){
-                bestPath = &secondPath;
+            secondDirs = rev;
+            if (secondDirs.size() < firstDirs.size() && !secondDirs.empty()){
+                bestDirs = &secondDirs;
             }
         }
 
         solutionReady = true;
-        replayIndex = 1;
+        replayIndex = 0;
     }
 
     void resetDfsState() {
@@ -114,8 +118,8 @@ public:
         }
 
         // Run #3, we already have the solution, so we just iterate through it
-        if (attemptNumber >= 3 && solutionReady && replayIndex < bestPath->size()) {
-            DIRECTION d = directionTo(current, bestPath->at(replayIndex));
+        if (bestDirs && attemptNumber >= 3 && solutionReady && replayIndex < bestDirs->size()) {
+            DIRECTION d = (*bestDirs)[replayIndex];
             replayIndex++;
             lastPos = current;
             return d;
@@ -159,9 +163,9 @@ public:
 
 stack<point> RaceCarDriver::path;
 set<pair<int,int>> RaceCarDriver::visited;
-vector<point> RaceCarDriver::firstPath;
-vector<point> RaceCarDriver::secondPath;
-vector<point>* RaceCarDriver::bestPath = nullptr;
+vector<DIRECTION> RaceCarDriver::firstDirs;
+vector<DIRECTION> RaceCarDriver::secondDirs;
+vector<DIRECTION>* RaceCarDriver::bestDirs = nullptr;
 bool RaceCarDriver::solutionReady = false;
 size_t RaceCarDriver::replayIndex = 0;
 int RaceCarDriver::attemptNumber = 1;
