@@ -194,7 +194,7 @@ TeamThreePoint nextPoint(TeamThreePoint p, DIRECTION d) {
 }
 
 bool inBounds(const TeamThreePoint& p) {
-    return p.x >= 0 && p.y >= 0 && p.x < col && p.y < row;
+    return p.x < col && p.y < row;
 }
 
 void resetDfsState(stack<TeamThreePoint>& path, set<TeamThreePoint>& visited) {
