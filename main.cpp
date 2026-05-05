@@ -104,7 +104,6 @@ clock.reset();
 
 		if(robot.racing() and !robot.Finished()){
 
-			//g.Sleep(250);
 			if(g.kbhit()){
 				switch(toupper(g.getKey())){
 
@@ -122,7 +121,7 @@ clock.reset();
 				legalMove(robot, walls);
 				robot.draw(g);
 				g.update();
-				// g.Sleep(10000);
+				//g.Sleep(500);
 
 			}
 
