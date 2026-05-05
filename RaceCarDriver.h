@@ -224,6 +224,7 @@ public:
             map<Point, vector<Point>>& graph,
             vector<DIRECTION>& bestPath,
             size_t& bestPathIdx,
+            bool& replayShortestPath,
             const int run) {
         vector<DIRECTION> const DIRECTIONS = {EAST, SOUTH, WEST, NORTH};
 
@@ -233,7 +234,7 @@ public:
                 Point next = nextPoint(current, dir);
                 if (inBounds(next) 
                         && visited.count(next) == 0 
-                        && (!(next == endPt))) {
+                    && (!bestPath.empty() || !(next == endPt))) {
                     path.push(next);
                     visited.emplace(next);
                     current = next;
@@ -254,8 +255,14 @@ public:
             if (parent == startPt && !hasUnvisitedMove(parent, visited, endPt)) {
                 buildBestPath(graph, startPt, endPt, bestPath);
                 bestPathIdx = 0;
-                // Run dijkstras here
-                
+                replayShortestPath = true;
+
+                // Start following the shortest path right away.
+                if (bestPathIdx < bestPath.size()) {
+                    DIRECTION nextDir = bestPath[bestPathIdx++];
+                    current = nextPoint(parent, nextDir);
+                    return nextDir;
+                }
             }
 
             return directionTo(child, parent);    
@@ -278,6 +285,7 @@ public:
         static int lastRun = -1;
         static vector<DIRECTION> bestPath;
         static size_t bestPathIdx = 0;
+        static bool replayShortestPath = false;
 
         // If we go into a new run
         if (run != lastRun) {
@@ -287,6 +295,7 @@ public:
                 graph.clear();
                 bestPath.clear();
                 bestPathIdx = 0;
+                replayShortestPath = false;
             }
 
             current = startingPoint;
@@ -301,36 +310,37 @@ public:
 		switch (run) {
             // RUN DFS to only find the finish
             case 0: {
-                DIRECTION dir = getDFSDir(path, visited, current, endPoint, startingPoint, graph, bestPath, bestPathIdx, run);
+                DIRECTION dir = getDFSDir(path, visited, current, endPoint, startingPoint, graph, bestPath, bestPathIdx, replayShortestPath, run);
                 return dir;
                 break;
             }
 
             // RUN DFS to create the topology (do not go to the finish)
             case 1: {
+                if (replayShortestPath) {
+                    if (bestPathIdx < bestPath.size()) {
+                        return bestPath[bestPathIdx++];
+                    }
+                    return NORTH;
+                }
+
                 addCurrentCellToGraph(graph, current);
-                DIRECTION dir = getDFSDir(path, visited, current, endPoint, startingPoint, graph, bestPath, bestPathIdx, run);
+                DIRECTION dir = getDFSDir(path, visited, current, endPoint, startingPoint, graph, bestPath, bestPathIdx, replayShortestPath, run);
                 return dir;
                 break;
             }
 
             // Traverse the vector of directions
             case 2: {
-                // Replay the path one move at a time.
-                if (bestPath.empty()) {
-                    buildBestPath(graph, startingPoint, endPoint, bestPath);
-                    bestPathIdx = 0;
-                }
-
                 if (bestPathIdx < bestPath.size()) {
                     return bestPath[bestPathIdx++];
                 }
-                return NORTH;
+                return EAST;
             }
 
             // Our default is just running DFS, cause why not
             default: {
-                DIRECTION dir = getDFSDir(path, visited, current, endPoint, startingPoint, graph, bestPath, bestPathIdx, run);
+                DIRECTION dir = getDFSDir(path, visited, current, endPoint, startingPoint, graph, bestPath, bestPathIdx, replayShortestPath, run);
                 return dir;
                 break;
             }
