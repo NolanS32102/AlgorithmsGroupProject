@@ -9,14 +9,6 @@
 * Date Last Modified: 5/03/2026
 */
 
-
-/*
-* RaceCarDriver.h
- *
- *  Created on: Spring, 2026
- *      Author: bill_booth
- */
-
 #ifndef RACECARDRIVER_H_
 #define RACECARDRIVER_H_
 
@@ -30,157 +22,109 @@ using namespace std;
 class RaceCarDriver{
 private:
     Racer* car;
-    static stack<point> path;
-    static set<pair<int,int>> visited;
-    static vector<DIRECTION> firstDirs;
-    static vector<DIRECTION> secondDirs;
-    static vector<DIRECTION>* bestDirs;
-    static bool solutionReady;
-    static size_t replayIndex;
-    static point lastPos;
-    static int attemptNumber;
 
-    vector<DIRECTION> const DIRECTIONS_ORIGINAL = {EAST, SOUTH, WEST, NORTH};
-    vector<DIRECTION> const DIRECTIONS_REVERSED = {SOUTH, WEST, NORTH, EAST};
-
-    bool samePoint(const point& a, const point& b) {
-        return a.x == b.x && a.y == b.y;
+    bool inBounds(const pair<int,int>& p) {
+        return p.first >= 0 && p.second >= 0 && p.first < col && p.second < row;
     }
 
-    bool inBounds(const point& p) {
-        return p.x >= 0 && p.y >= 0 && p.x < col && p.y < row;
-    }
-
-    DIRECTION directionTo(point from, point to) {
-        if (to.x > from.x) return EAST;
-        if (to.x < from.x) return WEST;
-        if (to.y > from.y) return SOUTH;
+    DIRECTION directionTo(pair<int, int> from, pair<int,int> to) {
+        if (to.first > from.first) return EAST;
+        if (to.first < from.first) return WEST;
+        if (to.second > from.second) return SOUTH;
         return NORTH;
     }
 
-    point nextPoint(point p, DIRECTION d) {
-        if (d == EAST) p.x++;
-        else if (d == SOUTH) p.y++;
-        else if (d == WEST) p.x--;
-        else p.y--;
+    void addEdges(map<pair<int,int>, vector<pair<pair<int,int>, DIRECTION>>> &graph, pair<int,int> current, Racer* car){
+        vector<DIRECTION> dirs = {EAST, SOUTH, WEST, NORTH};
+
+        for(DIRECTION d : dirs){
+            if(!car->look(d)){
+                pair<int,int> next = current;
+
+                if(d == EAST) next.first++;
+                if(d == WEST) next.first--;
+                if(d == SOUTH) next.second++;
+                if(d == NORTH) next.second--;
+
+                graph[current].push_back({next, d});
+            }
+        }
+    }
+
+    pair<int, int> nextPoint(pair<int, int> p, DIRECTION d) {
+        if (d == EAST) p.first++;
+        else if (d == SOUTH) p.second++;
+        else if (d == WEST) p.first--;
+        else p.second--;
         return p;
-    }
-
-    bool atStart(const point& p) {
-        return p.x == 0 && p.y == 0;
-    }
-
-    void saveCurrentPathAsSolution() {
-        stack<point> temp = path;
-        vector<DIRECTION> rev;
-        while (!temp.empty()) {
-            point parent = temp.top();
-            temp.pop();
-
-            if (!temp.empty()) {
-                rev.push_back(directionTo(temp.top(), parent));
-            }
-        }
-
-        reverse(rev.begin(), rev.end());
-
-        if (attemptNumber == 1){
-            firstDirs = rev;
-            bestDirs = &firstDirs;
-        }
-        else if (attemptNumber == 2){
-            secondDirs = rev;
-            if (secondDirs.size() < firstDirs.size() && !secondDirs.empty()){
-                bestDirs = &secondDirs;
-            }
-        }
-
-        solutionReady = true;
-        replayIndex = 0;
-    }
-
-    void resetDfsState() {
-        while (!path.empty()) path.pop();
-        visited.clear();
-    }
-    
-    vector<DIRECTION> getDirections(){
-        // run second attempt with different set of directions
-        if (attemptNumber == 2){
-            return DIRECTIONS_REVERSED;
-        }
-        return DIRECTIONS_ORIGINAL;
     }
 
 public:
     RaceCarDriver(Racer* p = nullptr): car{p} {}
 
-    DIRECTION nextMoveTeamThree() {
+    DIRECTION nextMoveTeamThree(int run = 0) {
+        static map<pair<int, int>, vector<pair<pair<int,int>, DIRECTION>>> graph;
+        static set<pair<int,int>> visited;
+        static stack<pair<int,int>> path;
+        static vector<DIRECTION> bestPath;
+
+        static bool solutionReady = false;
+        static size_t replayIndex = 0;
+        static pair<int,int> goal = {-1, -1};
+        static int x = 0;
+        static int y = 0;
+        vector<DIRECTION> directions = {EAST, SOUTH, WEST, NORTH};
+
         if (car == nullptr) return EAST;
 
-        point current = car->getLocation();
+        pair <int, int> current = {x, y};
 
-        // NEW RUN
-        if (atStart(current) && !atStart(lastPos) && lastPos.x != -1) {
-            if (!path.empty()){
-                saveCurrentPathAsSolution();
+        // dfs explore and build graph
+        if (run == 0) {
+
+            if (path.empty()) {
+                path.push(current);
+                visited.insert(current);
             }
-            resetDfsState();
-            attemptNumber++;
+
+            for (DIRECTION dir: directions) {
+                if (!car->look(dir)) {
+                    pair<int, int> next = nextPoint(current, dir);
+                    
+                    if (inBounds(next) && !visited.count(next)) {
+                        path.push(next);
+                        visited.insert(next);
+                        
+                        x = next.first;
+                        y = next.second;
+
+                        return dir;
+                    }
+                }
+            }
+
+            if (path.size() > 1) {
+                path.pop();
+                pair<int, int> parent = path.top();
+                return directionTo(current, parent);
+            }
         }
 
-        // Run #3, we already have the solution, so we just iterate through it
-        if (bestDirs && attemptNumber >= 3 && solutionReady && replayIndex < bestDirs->size()) {
-            DIRECTION d = (*bestDirs)[replayIndex];
+        // run bfs
+        if (run == 1) {
+
+        }
+
+        // shortest path
+        if (run == 2 && replayIndex < bestPath.size()) {
+            DIRECTION d = bestPath[replayIndex];
             replayIndex++;
-            lastPos = current;
             return d;
         }
 
-        // Run #1-2:
-        if (path.empty()) {
-            // First cell
-            path.push(current);
-            visited.emplace(current.x, current.y);
-        }
-
-        // Check each direction, traverse if it's available
-        for (DIRECTION dir: getDirections()) {
-            if (!car->look(dir)) {
-                point next = nextPoint(current, dir);
-                // Checks in bounds & not already visited
-                if (inBounds(next) && visited.count({next.x, next.y}) == 0) {
-                    path.push(next);
-                    visited.emplace(next.x, next.y);
-                    lastPos = current;
-                    return dir;
-                }
-            }
-        }
-
-        // Backtracking case
-        if (path.size() > 1) {
-            path.pop();
-            point parent = path.top();
-            lastPos = current;
-            return directionTo(current, parent);
-        }
-
-        // We failed ;(
-        lastPos = current;
-        car->die();
         return EAST;
     }
 };
 
-stack<point> RaceCarDriver::path;
-set<pair<int,int>> RaceCarDriver::visited;
-vector<DIRECTION> RaceCarDriver::firstDirs;
-vector<DIRECTION> RaceCarDriver::secondDirs;
-vector<DIRECTION>* RaceCarDriver::bestDirs = nullptr;
-bool RaceCarDriver::solutionReady = false;
-size_t RaceCarDriver::replayIndex = 0;
-int RaceCarDriver::attemptNumber = 1;
-point RaceCarDriver::lastPos = point(-1, -1);
 
 #endif /* RACECARDRIVER_H_ */
