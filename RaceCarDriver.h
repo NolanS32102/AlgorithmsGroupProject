@@ -40,6 +40,7 @@ public:
         int y;
 
         Point() {
+            // -1 represents an invalid point, so init to this
             this->x = -1;
             this->y = -1;
         }
