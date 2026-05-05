@@ -257,12 +257,11 @@ public:
                 bestPathIdx = 0;
                 replayShortestPath = true;
 
-                // Start following the shortest path right away.
-                if (bestPathIdx < bestPath.size()) {
-                    DIRECTION nextDir = bestPath[bestPathIdx++];
-                    current = nextPoint(parent, nextDir);
-                    return nextDir;
-                }
+                //if (bestPathIdx < bestPath.size()) {
+                //    DIRECTION nextDir = bestPath[bestPathIdx++];
+                //    current = nextPoint(parent, nextDir);
+                //    return nextDir;
+                //}
             }
 
             return directionTo(child, parent);    
@@ -339,6 +338,7 @@ public:
             }
 
             // Our default is just running DFS, cause why not
+            // We should never get here if he only runs 3 runs
             default: {
                 DIRECTION dir = getDFSDir(path, visited, current, endPoint, startingPoint, graph, bestPath, bestPathIdx, replayShortestPath, run);
                 return dir;
