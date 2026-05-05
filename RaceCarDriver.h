@@ -342,7 +342,8 @@ DIRECTION getDFSDir(
             TeamThreePoint next = nextPoint(current, dir);
             if (inBounds(next) 
                     && visited.count(next) == 0 
-                && (!bestPath.empty() || !(next == endPt))) {
+                && (!bestPath.empty() || !(next == endPt))
+                && !(next == startPt)) {
                 path.push(next);
                 visited.emplace(next);
                 current = next;
