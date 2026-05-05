@@ -139,6 +139,7 @@ public:
                         current = nextPoint(current, dir);
                         return dir;
                     }
+                    replayShortestPath = false;
                     return NORTH;
                 }
 
@@ -155,6 +156,7 @@ public:
                     current = nextPoint(current, dir);
                     return dir;
                 }
+                replayShortestPath = false;
                 return EAST;
             }
 
@@ -368,7 +370,7 @@ DIRECTION getDFSDir(
         if (parent == startPt && !hasUnvisitedMove(car, parent, visited, endPt, endPointKnown)) {
             buildBestPath(graph, startPt, endPt, bestPath);
             bestPathIdx = 1;
-            replayShortestPath = true;
+            replayShortestPath = !bestPath.empty() || startPt == endPt;
             //if (bestPathIdx < bestPath.size()) {
             //    DIRECTION nextDir = bestPath[bestPathIdx++];
             //    current = nextPoint(parent, nextDir);
