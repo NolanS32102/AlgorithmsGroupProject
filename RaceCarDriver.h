@@ -34,7 +34,7 @@ private:
         return NORTH;
     }
 
-    void addEdges(map<pair<int,int>, vector<pair<pair<int,int>, DIRECTION>>> &graph, pair<int,int> current, Racer* car){
+    void buildGraph(map<pair<int,int>, vector<pair<pair<int,int>, DIRECTION>>> &graph, pair<int,int> current, Racer* car){
         vector<DIRECTION> dirs = {EAST, SOUTH, WEST, NORTH};
 
         for(DIRECTION d : dirs){
@@ -92,6 +92,8 @@ public:
                     pair<int, int> next = nextPoint(current, dir);
                     
                     if (inBounds(next) && !visited.count(next)) {
+                        buildGraph(graph, current, car);
+                        
                         path.push(next);
                         visited.insert(next);
                         
