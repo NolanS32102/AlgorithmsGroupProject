@@ -29,36 +29,28 @@ using namespace std;
 
 class RaceCarDriver{
 private:
-    Racer* car;
-    static stack<point> path;
-    static set<pair<int,int>> visited;
-    static vector<DIRECTION> firstDirs;
-    static vector<DIRECTION> secondDirs;
-    static vector<DIRECTION>* bestDirs;
-    static bool solutionReady;
-    static size_t replayIndex;
-    static point lastPos;
-    static int attemptNumber;
+	Racer* car;
 
-    vector<DIRECTION> const DIRECTIONS_ORIGINAL = {EAST, SOUTH, WEST, NORTH};
-    vector<DIRECTION> const DIRECTIONS_REVERSED = {SOUTH, WEST, NORTH, EAST};
+public:
+	RaceCarDriver(Racer* p = nullptr): car{p}{}
 
-    bool samePoint(const point& a, const point& b) {
+    class TeamThreePoint{
+        public:
+            TeamThreePoint(int x, int y): x(x), y(y){}
+            TeamThreePoint(): x(-1), y(-1){}
+            int x, y;
+
+            bool operator<(const TeamThreePoint& other) const {
+                if (x != other.x) return x < other.x;
+                return y < other.y;
+            }
+    };
+
+    bool samePoint(const TeamThreePoint& a, const TeamThreePoint& b) {
         return a.x == b.x && a.y == b.y;
     }
 
-    bool inBounds(const point& p) {
-        return p.x >= 0 && p.y >= 0 && p.x < col && p.y < row;
-    }
-
-    DIRECTION directionTo(point from, point to) {
-        if (to.x > from.x) return EAST;
-        if (to.x < from.x) return WEST;
-        if (to.y > from.y) return SOUTH;
-        return NORTH;
-    }
-
-    point nextPoint(point p, DIRECTION d) {
+    TeamThreePoint nextPoint(TeamThreePoint p, DIRECTION d) {
         if (d == EAST) p.x++;
         else if (d == SOUTH) p.y++;
         else if (d == WEST) p.x--;
@@ -66,121 +58,123 @@ private:
         return p;
     }
 
-    bool atStart(const point& p) {
-        return p.x == 0 && p.y == 0;
+    bool inBounds(const TeamThreePoint& p) {
+        return p.x >= 0 && p.y >= 0 && p.x < col && p.y < row;
     }
 
-    void saveCurrentPathAsSolution() {
-        stack<point> temp = path;
-        vector<DIRECTION> rev;
-        while (!temp.empty()) {
-            point parent = temp.top();
-            temp.pop();
-
-            if (!temp.empty()) {
-                rev.push_back(directionTo(temp.top(), parent));
-            }
-        }
-
-        reverse(rev.begin(), rev.end());
-
-        if (attemptNumber == 1){
-            firstDirs = rev;
-            bestDirs = &firstDirs;
-        }
-        else if (attemptNumber == 2){
-            secondDirs = rev;
-            if (secondDirs.size() < firstDirs.size() && !secondDirs.empty()){
-                bestDirs = &secondDirs;
-            }
-        }
-
-        solutionReady = true;
-        replayIndex = 0;
-    }
-
-    void resetDfsState() {
+    void resetDfsState(stack<TeamThreePoint>& path, set<TeamThreePoint>& visited) {
         while (!path.empty()) path.pop();
         visited.clear();
     }
-    
-    vector<DIRECTION> getDirections(){
-        // run second attempt with different set of directions
-        if (attemptNumber == 2){
-            return DIRECTIONS_REVERSED;
-        }
-        return DIRECTIONS_ORIGINAL;
+
+    DIRECTION directionTo(TeamThreePoint from, TeamThreePoint to) {
+        if (to.x > from.x) return EAST;
+        if (to.x < from.x) return WEST;
+        if (to.y > from.y) return SOUTH;
+        return NORTH;
     }
 
-public:
-    RaceCarDriver(Racer* p = nullptr): car{p} {}
+    DIRECTION getDFSDir(
+            stack<TeamThreePoint>& path,
+            set<TeamThreePoint>& visited,
+            TeamThreePoint& current,
+            TeamThreePoint& endPt,
+            TeamThreePoint& startPt,
+            const int run) {
+        vector<DIRECTION> const DIRECTIONS = {EAST, SOUTH, WEST, NORTH};
 
-    DIRECTION nextMoveTeamThree() {
-        if (car == nullptr) return EAST;
-
-        point current = car->getLocation();
-
-        // NEW RUN
-        if (atStart(current) && !atStart(lastPos) && lastPos.x != -1) {
-            if (!path.empty()){
-                saveCurrentPathAsSolution();
-            }
-            resetDfsState();
-            attemptNumber++;
-        }
-
-        // Run #3, we already have the solution, so we just iterate through it
-        if (bestDirs && attemptNumber >= 3 && solutionReady && replayIndex < bestDirs->size()) {
-            DIRECTION d = (*bestDirs)[replayIndex];
-            replayIndex++;
-            lastPos = current;
-            return d;
-        }
-
-        // Run #1-2:
-        if (path.empty()) {
-            // First cell
-            path.push(current);
-            visited.emplace(current.x, current.y);
-        }
-
-        // Check each direction, traverse if it's available
-        for (DIRECTION dir: getDirections()) {
+        // Decision
+        for (DIRECTION dir: DIRECTIONS) {
             if (!car->look(dir)) {
-                point next = nextPoint(current, dir);
-                // Checks in bounds & not already visited
-                if (inBounds(next) && visited.count({next.x, next.y}) == 0) {
+                TeamThreePoint next = nextPoint(current, dir);
+                if (inBounds(next) 
+                        && visited.count(next) == 0 
+                        && (!samePoint(next, endPt))) {
                     path.push(next);
-                    visited.emplace(next.x, next.y);
-                    lastPos = current;
+                    visited.emplace(next);
+                    current = next;
                     return dir;
                 }
             }
         }
 
-        // Backtracking case
+        // Backtracking
         if (path.size() > 1) {
+            TeamThreePoint child = current;
             path.pop();
-            point parent = path.top();
-            lastPos = current;
-            return directionTo(current, parent);
+            TeamThreePoint parent = path.top();
+            current = parent;
+            return directionTo(child, parent);    
+        }
+        return EAST;
+    }
+
+	DIRECTION nextMoveTeamThree(int run){
+        // Pts
+        static TeamThreePoint startingPoint = TeamThreePoint(0, 0);
+        static TeamThreePoint endPoint = TeamThreePoint();
+        static TeamThreePoint current = startingPoint;
+
+        // DFS
+        static stack<TeamThreePoint> path;
+        static set<TeamThreePoint> visited;
+
+        // Dijkstra's stuff goes here (wtf is dijkstra??)
+
+        // Best path
+        static int lastRun = -1;
+        static vector<DIRECTION> bestPath;
+        static size_t bestPathIdx = 0;
+
+        if (run != lastRun) {
+            // Preserve the finish location discovered during run 0.
+            // At the moment run changes from 0 -> 1, 'current' is still
+            // the logical point reached in run 0 (the finish tile).
+            if (lastRun == 0 && run == 1) {
+                endPoint = current;
+            }
+
+            current = startingPoint;
+            resetDfsState(path, visited);
+            path.push(startingPoint);
+            visited.emplace(startingPoint);
+
+            if (run == 2) bestPathIdx = 0;
+            lastRun = run;
         }
 
-        // We failed ;(
-        lastPos = current;
-        car->die();
-        return EAST;
+		switch (run) {
+            // RUN DFS to only find the finish
+            case 0: {
+                DIRECTION dir = getDFSDir(path, visited, current, endPoint, startingPoint, run);
+                return dir;
+                break;
+            }
+
+            // RUN DFS to create the topology (do not go to the finish)
+            case 1: {
+                if (run == 1 && samePoint(current, startingPoint)) {
+                    // "Flag on" DIJKSTRAS & begin running it here
+                }
+                DIRECTION dire = getDFSDir(path, visited, current, endPoint, startingPoint, run);
+                return dire;
+                break;
+            }
+
+            // Traverse the vector of directions
+            case 2: {
+                break;
+            }
+
+            default: {
+                break;
+            }
+        }
+
+        // Fallback to satisfy all control paths.
+        return NORTH;
     }
 };
 
-stack<point> RaceCarDriver::path;
-set<pair<int,int>> RaceCarDriver::visited;
-vector<DIRECTION> RaceCarDriver::firstDirs;
-vector<DIRECTION> RaceCarDriver::secondDirs;
-vector<DIRECTION>* RaceCarDriver::bestDirs = nullptr;
-bool RaceCarDriver::solutionReady = false;
-size_t RaceCarDriver::replayIndex = 0;
-int RaceCarDriver::attemptNumber = 1;
-point RaceCarDriver::lastPos = point(-1, -1);
 
 #endif /* RACECARDRIVER_H_ */

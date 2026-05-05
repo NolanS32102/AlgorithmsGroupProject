@@ -104,6 +104,7 @@ clock.reset();
 
 		if(robot.racing() and !robot.Finished()){
 
+			//g.Sleep(250);
 			if(g.kbhit()){
 				switch(toupper(g.getKey())){
 
@@ -117,7 +118,7 @@ clock.reset();
 					case DOWN_ARROW:  robot.move(SOUTH); break;
 
 				}
-				robot.move(driver.nextMoveTeamThree());
+				robot.move(driver.nextMoveTeamThree(runCount));
 				legalMove(robot, walls);
 				robot.draw(g);
 				g.update();
@@ -128,7 +129,7 @@ clock.reset();
 			if(g.mouseClick()){
 			}
 
-			robot.move(driver.nextMoveTeamThree());
+			robot.move(driver.nextMoveTeamThree(runCount));
 			legalMove(robot, walls);
 			robot.draw(g);
 			g.update();
