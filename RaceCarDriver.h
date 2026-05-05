@@ -317,6 +317,11 @@ public:
             // Traverse the vector of directions
             case 2: {
                 // Replay the path one move at a time.
+                if (bestPath.empty()) {
+                    buildBestPath(graph, startingPoint, endPoint, bestPath);
+                    bestPathIdx = 0;
+                }
+
                 if (bestPathIdx < bestPath.size()) {
                     return bestPath[bestPathIdx++];
                 }
