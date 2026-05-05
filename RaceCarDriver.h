@@ -34,23 +34,50 @@ private:
 public:
 	RaceCarDriver(Racer* p = nullptr): car{p}{}
 
-    class TeamThreePoint{
-        public:
-            TeamThreePoint(int x, int y): x(x), y(y){}
-            TeamThreePoint(): x(-1), y(-1){}
-            int x, y;
+    struct Point {
+        int x;
+        int y;
 
-            bool operator<(const TeamThreePoint& other) const {
-                if (x != other.x) return x < other.x;
-                return y < other.y;
+        Point(int x, int y) {
+        this->x = x;
+            this->y = y;
+        }
+        bool operator<(const Point& other) const {
+            if (x != other.x) {
+                return x < other.x;
             }
+            return y < other.y;
+        }
+        bool operator==(const Point& other) const {
+            return x == other.x && y == other.y;
+        }
     };
 
-    bool samePoint(const TeamThreePoint& a, const TeamThreePoint& b) {
+    void addCurrentCellToGraph(map<Point, vector<Point>>& graph, Point currPos) {
+        graph[currPos] = {};
+
+        if (!car->look(EAST)) {
+            graph[currPos].push_back(Point(currPos.x + 1, currPos.y));
+        }
+
+        if (!car->look(WEST)) {
+            graph[currPos].push_back(Point(currPos.x - 1, currPos.y));
+        }
+
+        if (!car->look(NORTH)) {
+            graph[currPos].push_back(Point(currPos.x, currPos.y - 1));
+        }
+
+        if (!car->look(SOUTH)) {
+            graph[currPos].push_back(Point(currPos.x, currPos.y + 1));
+        }
+    }
+
+    bool samePoint(const Point& a, const Point& b) {
         return a.x == b.x && a.y == b.y;
     }
 
-    TeamThreePoint nextPoint(TeamThreePoint p, DIRECTION d) {
+    Point nextPoint(Point p, DIRECTION d) {
         if (d == EAST) p.x++;
         else if (d == SOUTH) p.y++;
         else if (d == WEST) p.x--;
@@ -58,16 +85,16 @@ public:
         return p;
     }
 
-    bool inBounds(const TeamThreePoint& p) {
+    bool inBounds(const Point& p) {
         return p.x >= 0 && p.y >= 0 && p.x < col && p.y < row;
     }
 
-    void resetDfsState(stack<TeamThreePoint>& path, set<TeamThreePoint>& visited) {
+    void resetDfsState(stack<Point>& path, set<Point>& visited) {
         while (!path.empty()) path.pop();
         visited.clear();
     }
 
-    DIRECTION directionTo(TeamThreePoint from, TeamThreePoint to) {
+    DIRECTION directionTo(Point from, Point to) {
         if (to.x > from.x) return EAST;
         if (to.x < from.x) return WEST;
         if (to.y > from.y) return SOUTH;
@@ -75,18 +102,18 @@ public:
     }
 
     DIRECTION getDFSDir(
-            stack<TeamThreePoint>& path,
-            set<TeamThreePoint>& visited,
-            TeamThreePoint& current,
-            TeamThreePoint& endPt,
-            TeamThreePoint& startPt,
+            stack<Point>& path,
+            set<Point>& visited,
+            Point& current,
+            Point& endPt,
+            Point& startPt,
             const int run) {
         vector<DIRECTION> const DIRECTIONS = {EAST, SOUTH, WEST, NORTH};
 
         // Decision
         for (DIRECTION dir: DIRECTIONS) {
             if (!car->look(dir)) {
-                TeamThreePoint next = nextPoint(current, dir);
+                Point next = nextPoint(current, dir);
                 if (inBounds(next) 
                         && visited.count(next) == 0 
                         && (!samePoint(next, endPt))) {
@@ -100,9 +127,9 @@ public:
 
         // Backtracking
         if (path.size() > 1) {
-            TeamThreePoint child = current;
+            Point child = current;
             path.pop();
-            TeamThreePoint parent = path.top();
+            Point parent = path.top();
             current = parent;
             return directionTo(child, parent);    
         }
@@ -111,13 +138,13 @@ public:
 
 	DIRECTION nextMoveTeamThree(int run){
         // Pts
-        static TeamThreePoint startingPoint = TeamThreePoint(0, 0);
-        static TeamThreePoint endPoint = TeamThreePoint();
-        static TeamThreePoint current = startingPoint;
+        static Point startingPoint = Point(0, 0);
+        static Point endPoint = Point(-1, -1);
+        static Point current = startingPoint;
 
         // DFS
-        static stack<TeamThreePoint> path;
-        static set<TeamThreePoint> visited;
+        static stack<Point> path;
+        static set<Point> visited;
 
         // Dijkstra's stuff goes here (wtf is dijkstra??)
 
@@ -156,8 +183,8 @@ public:
                 if (run == 1 && samePoint(current, startingPoint)) {
                     // "Flag on" DIJKSTRAS & begin running it here
                 }
-                DIRECTION dire = getDFSDir(path, visited, current, endPoint, startingPoint, run);
-                return dire;
+                DIRECTION dir = getDFSDir(path, visited, current, endPoint, startingPoint, run);
+                return dir;
                 break;
             }
 
