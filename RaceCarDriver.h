@@ -25,6 +25,7 @@
 #include <stack>
 #include <vector>
 #include <algorithm>
+#include <map>
 using namespace std;
 
 class RaceCarDriver{
@@ -51,6 +52,10 @@ public:
         bool operator==(const Point& other) const {
             return x == other.x && y == other.y;
         }
+
+        void print() const {
+            cout << "(" << x << ", " << y << ")";
+        }
     };
 
     void addCurrentCellToGraph(map<Point, vector<Point>>& graph, Point currPos) {
@@ -71,10 +76,6 @@ public:
         if (!car->look(SOUTH)) {
             graph[currPos].push_back(Point(currPos.x, currPos.y + 1));
         }
-    }
-
-    bool samePoint(const Point& a, const Point& b) {
-        return a.x == b.x && a.y == b.y;
     }
 
     Point nextPoint(Point p, DIRECTION d) {
@@ -116,7 +117,7 @@ public:
                 Point next = nextPoint(current, dir);
                 if (inBounds(next) 
                         && visited.count(next) == 0 
-                        && (!samePoint(next, endPt))) {
+                        && (!(next == endPt))) {
                     path.push(next);
                     visited.emplace(next);
                     current = next;
@@ -137,10 +138,11 @@ public:
     }
 
 	DIRECTION nextMoveTeamThree(int run){
-        // Pts
+        // Points
         static Point startingPoint = Point(0, 0);
         static Point endPoint = Point(-1, -1);
         static Point current = startingPoint;
+        static map<Point, vector<Point>> graph;
 
         // DFS
         static stack<Point> path;
@@ -153,10 +155,8 @@ public:
         static vector<DIRECTION> bestPath;
         static size_t bestPathIdx = 0;
 
+        // If we go into a new run
         if (run != lastRun) {
-            // Preserve the finish location discovered during run 0.
-            // At the moment run changes from 0 -> 1, 'current' is still
-            // the logical point reached in run 0 (the finish tile).
             if (lastRun == 0 && run == 1) {
                 endPoint = current;
             }
@@ -180,9 +180,10 @@ public:
 
             // RUN DFS to create the topology (do not go to the finish)
             case 1: {
-                if (run == 1 && samePoint(current, startingPoint)) {
-                    // "Flag on" DIJKSTRAS & begin running it here
+                if (run == 1 && (current == startingPoint)) {
+                    // DIJKSTRAS    
                 }
+                addCurrentCellToGraph(graph, current);
                 DIRECTION dir = getDFSDir(path, visited, current, endPoint, startingPoint, run);
                 return dir;
                 break;
@@ -190,7 +191,9 @@ public:
 
             // Traverse the vector of directions
             case 2: {
-                break;
+                DIRECTION d = (bestPath)[bestPathIdx];
+                bestPathIdx++;
+                return d;
             }
 
             default: {
