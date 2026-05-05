@@ -113,20 +113,23 @@ public:
         static bool endPointKnown = false;
 
         if (run != lastRun) {
-            // Save the finish point before resetting the search state.
             if (lastRun == 0 && run == 1) {
                 endPoint = current;
                 endPointKnown = true;
                 graph.clear();
                 bestPath.clear();
+            }
+            if (lastRun == 1 && run == 2) {
                 bestPathIdx = 0;
+                current = startingPoint;
+                lastRun = run;
+                return bestPath.empty() ? firstOpenDirection(car) : bestPath[bestPathIdx++];
             }
 
             current = startingPoint;
             resetDfsState(path, visited);
             path.push(startingPoint);
             visited.emplace(startingPoint);
-
             bestPathIdx = 0;
             replayShortestPath = false;
             lastRun = run;
