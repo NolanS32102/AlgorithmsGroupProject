@@ -57,6 +57,16 @@ struct TeamThreePoint {
     }
 };
 
+DIRECTION firstOpenDirection(Racer* car) {
+    vector<DIRECTION> const DIRECTIONS = {EAST, SOUTH, WEST, NORTH};
+    for (DIRECTION dir : DIRECTIONS) {
+        if (!car->look(dir)) {
+            return dir;
+        }
+    }
+    return NORTH;
+}
+
 
 void addCurrentCellToGraph(Racer* car, map<TeamThreePoint, vector<TeamThreePoint>>& graph, TeamThreePoint currPos);
 TeamThreePoint nextPoint(TeamThreePoint p, DIRECTION d);
@@ -110,7 +120,6 @@ public:
                 graph.clear();
                 bestPath.clear();
                 bestPathIdx = 0;
-                replayShortestPath = false;
             }
 
             current = startingPoint;
@@ -118,7 +127,8 @@ public:
             path.push(startingPoint);
             visited.emplace(startingPoint);
 
-            if (run == 2) bestPathIdx = 0;
+            bestPathIdx = 0;
+            replayShortestPath = false;
             lastRun = run;
         }
 
@@ -140,7 +150,7 @@ public:
                         return dir;
                     }
                     replayShortestPath = false;
-                    return NORTH;
+                    return firstOpenDirection(car);
                 }
 
                 addCurrentCellToGraph(car, graph, current);
@@ -157,7 +167,7 @@ public:
                     return dir;
                 }
                 replayShortestPath = false;
-                return EAST;
+                return firstOpenDirection(car);
             }
 
             // Our default is just running DFS, cause why not
@@ -369,8 +379,8 @@ DIRECTION getDFSDir(
         // build the shortest path now using dijkstras
         if (parent == startPt && !hasUnvisitedMove(car, parent, visited, endPt, endPointKnown)) {
             buildBestPath(graph, startPt, endPt, bestPath);
-            bestPathIdx = 1;
-            replayShortestPath = !bestPath.empty() || startPt == endPt;
+            bestPathIdx = 0;
+            replayShortestPath = !bestPath.empty();
             //if (bestPathIdx < bestPath.size()) {
             //    DIRECTION nextDir = bestPath[bestPathIdx++];
             //    current = nextPoint(parent, nextDir);
@@ -382,7 +392,7 @@ DIRECTION getDFSDir(
         return dir;    
     }
 
-    return EAST;
+    return firstOpenDirection(car);
 }
 
 #endif /* RACECARDRIVER_H_ */
