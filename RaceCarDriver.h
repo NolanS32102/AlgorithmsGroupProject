@@ -179,7 +179,7 @@ public:
             }
         }
 
-        // Fallback to satisfy all control paths.
+        // Fallback to satisfy
         return NORTH;
     }
 };
@@ -225,7 +225,7 @@ bool hasUnvisitedMove(
         bool endPointKnown) {
     vector<DIRECTION> const DIRECTIONS = {EAST, SOUTH, WEST, NORTH};
 
-    // Check if this cell still has a new place to go.
+    // Check if this cell still has a new place to go
     for (DIRECTION dir : DIRECTIONS) {
         if (!car->look(dir)) {
             TeamThreePoint next = nextPoint(current, dir);
@@ -245,10 +245,10 @@ void buildBestPath(
         vector<DIRECTION>& bestPath) {
     const int INF = 1000000000;
 
-    // Clear the old path before building a new one.
+    // Clear the old path before building a new one
     bestPath.clear();
 
-    // Collect every cell we know about in "nodes".
+    // Collect every cell we know about in "nodes"
     set<TeamThreePoint> nodes;
     for (const auto& entry : graph) {
         nodes.insert(entry.first);
@@ -381,11 +381,13 @@ DIRECTION getDFSDir(
             buildBestPath(graph, startPt, endPt, bestPath);
             bestPathIdx = 0;
             replayShortestPath = !bestPath.empty();
-            //if (bestPathIdx < bestPath.size()) {
-            //    DIRECTION nextDir = bestPath[bestPathIdx++];
-            //    current = nextPoint(parent, nextDir);
-            //    return nextDir;
-            //}
+
+            // Return first Dijkstra step RIGHT NOW instead of the backtrack direction
+            if (replayShortestPath && bestPathIdx < bestPath.size()) {
+                DIRECTION nextDir = bestPath[bestPathIdx++];
+                current = nextPoint(parent, nextDir);
+                return nextDir;
+            }
         }
 
         DIRECTION dir = directionTo(child, parent);
