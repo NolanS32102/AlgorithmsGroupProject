@@ -1,6 +1,6 @@
 /*
 * Author: Karter Sanamo, Christine Seng, Georgia Rushing,
-* Matthew Peterson, Nolan Schirripa
+* Matthew Peterson, Nolan Schirripa (Team Three)
 * Assignment Title: Group Project
 * Assignment Description: driver for nextMoveTeamThree
 * function that solves the maze
@@ -122,8 +122,16 @@ public:
             if (lastRun == 1 && run == 2) {
                 bestPathIdx = 0;
                 current = startingPoint;
+                replayShortestPath = false;
                 lastRun = run;
-                return bestPath.empty() ? firstOpenDirection(car) : bestPath[bestPathIdx++];
+
+                if (!bestPath.empty()) {
+                    DIRECTION dir = bestPath[bestPathIdx++];
+                    current = nextPoint(current, dir);
+                    return dir;
+                }
+
+                return firstOpenDirection(car);
             }
 
             current = startingPoint;
@@ -145,21 +153,40 @@ public:
 
             // RUN DFS to create the topology (do not go to the finish)
             case 1: {
+                addCurrentCellToGraph(car, graph, current);
+
+                // We replay the shortest path after we found topology
                 if (replayShortestPath) {
-                    // Running dijkstra's after getting back to the start
                     if (bestPathIdx < bestPath.size()) {
                         DIRECTION dir = bestPath[bestPathIdx++];
                         current = nextPoint(current, dir);
                         return dir;
                     }
+
                     replayShortestPath = false;
                     return firstOpenDirection(car);
                 }
+                // Once DFS has fully explored the maze and returned to the start
+                // Generate the shortest path from start to finish and begin replaying it.
+                if (current == startingPoint &&
+                    path.size() == 1 &&
+                    !hasUnvisitedMove(car, current, visited, endPoint, endPointKnown)) {
+                    buildBestPath(graph, startingPoint, endPoint, bestPath);
+                    bestPathIdx = 0;
+                    replayShortestPath = true;
 
-                addCurrentCellToGraph(car, graph, current);
-                DIRECTION dir = getDFSDir(car, path, visited, current, endPoint, startingPoint, graph, bestPath, bestPathIdx, replayShortestPath, endPointKnown, run);
-				return dir;
-                break;
+                    if (bestPathIdx < bestPath.size()) {
+                        DIRECTION dir = bestPath[bestPathIdx++];
+                        current = nextPoint(current, dir);
+                        return dir;
+                    }
+                }
+
+                DIRECTION dir = getDFSDir(car, path, visited, current, endPoint,
+                    startingPoint, graph, bestPath, bestPathIdx, replayShortestPath,
+                    endPointKnown, run);
+
+                return dir;
             }
 
             // Traverse the vector of directions
@@ -169,14 +196,16 @@ public:
                     current = nextPoint(current, dir);
                     return dir;
                 }
-                replayShortestPath = false;
-                return firstOpenDirection(car);
+
+                return NORTH;
             }
 
             // Our default is just running DFS, cause why not
             // We should never get here if he only runs 3 runs
             default: {
-				DIRECTION dir = getDFSDir(car, path, visited, current, endPoint, startingPoint, graph, bestPath, bestPathIdx, replayShortestPath, endPointKnown, run);
+				DIRECTION dir = getDFSDir(car, path, visited, current, endPoint,
+				    startingPoint, graph, bestPath, bestPathIdx,
+				    replayShortestPath, endPointKnown, run);
 				return dir;
                 break;
             }
@@ -360,9 +389,8 @@ DIRECTION getDFSDir(
     for (DIRECTION dir: DIRECTIONS) {
         if (!car->look(dir)) {
             TeamThreePoint next = nextPoint(current, dir);
-            if (visited.count(next) == 0 
-                && (!endPointKnown || !bestPath.empty() || !(next == endPt))
-                && !(next == startPt)) {
+            if (visited.count(next) == 0
+                && (!endPointKnown || !bestPath.empty() || !(next == endPt))) {
                 path.push(next);
                 visited.emplace(next);
                 current = next;
@@ -378,20 +406,7 @@ DIRECTION getDFSDir(
         TeamThreePoint parent = path.top();
         current = parent;
 
-        // If we are back at the start and there is nothing left to search,
-        // build the shortest path now using dijkstras
-        if (parent == startPt && !hasUnvisitedMove(car, parent, visited, endPt, endPointKnown)) {
-            buildBestPath(graph, startPt, endPt, bestPath);
-            bestPathIdx = 0;
-            replayShortestPath = !bestPath.empty();
-
-            // Return first Dijkstra step RIGHT NOW instead of the backtrack direction
-            if (replayShortestPath && bestPathIdx < bestPath.size()) {
-                DIRECTION nextDir = bestPath[bestPathIdx++];
-                current = nextPoint(parent, nextDir);
-                return nextDir;
-            }
-        }
+        // Old stuff here moved to case 1
 
         DIRECTION dir = directionTo(child, parent);
         return dir;    
