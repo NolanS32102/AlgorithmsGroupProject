@@ -4,9 +4,9 @@
 * Assignment Title: Group Project
 * Assignment Description: driver for nextMoveTeamThree
 * function that solves the maze
-* Due Date: 5/03/2026
+* Due Date: 5/06/2026
 * Date Created: 4/23/2026
-* Date Last Modified: 5/03/2026
+* Date Last Modified: 5/06/2026
 */
 
 
@@ -57,7 +57,7 @@ struct TeamThreePoint {
     }
 };
 
-DIRECTION firstOpenDirection(Racer* car) {
+DIRECTION firstOpenDirectionT3(Racer* car) {
     vector<DIRECTION> const DIRECTIONS = {EAST, SOUTH, WEST, NORTH};
     for (DIRECTION dir : DIRECTIONS) {
         if (!car->look(dir)) {
@@ -68,24 +68,18 @@ DIRECTION firstOpenDirection(Racer* car) {
 }
 
 
-void addCurrentCellToGraph(Racer* car, map<TeamThreePoint, vector<TeamThreePoint>>& graph, TeamThreePoint currPos);
-TeamThreePoint nextPoint(TeamThreePoint p, DIRECTION d);
-void resetDfsState(stack<TeamThreePoint>& path, set<TeamThreePoint>& visited);
-bool hasUnvisitedMove(Racer* car, const TeamThreePoint& current, const set<TeamThreePoint>& visited, const TeamThreePoint& endPt, bool endPointKnown);
-void buildBestPath(const map<TeamThreePoint, vector<TeamThreePoint>>& graph, const TeamThreePoint& start, const TeamThreePoint& finish, vector<DIRECTION>& bestPath);
-DIRECTION directionTo(TeamThreePoint from, TeamThreePoint to);
-DIRECTION getDFSDir(Racer* car,
-        stack<TeamThreePoint>& path,
-        set<TeamThreePoint>& visited,
-        TeamThreePoint& current,
-        TeamThreePoint& endPt,
-        TeamThreePoint& startPt,
-        map<TeamThreePoint, vector<TeamThreePoint>>& graph,
-        vector<DIRECTION>& bestPath,
-        size_t& bestPathIdx,
-        bool& replayShortestPath,
-        bool endPointKnown,
-        const int run);
+void addCurrentCellToGraphT3(Racer* car, map<TeamThreePoint, vector<TeamThreePoint>>& graph, TeamThreePoint currPos);
+TeamThreePoint nextPointT3(TeamThreePoint p, DIRECTION d);
+void resetDfsStateT3(stack<TeamThreePoint>& path, set<TeamThreePoint>& visited);
+bool hasUnvisitedMoveT3(Racer* car, const TeamThreePoint& current, const set<TeamThreePoint>& visited,
+    const TeamThreePoint& endPt, bool endPointKnown);
+void buildBestPathT3(const map<TeamThreePoint, vector<TeamThreePoint>>& graph,
+    const TeamThreePoint& start, const TeamThreePoint& finish, vector<DIRECTION>& bestPath);
+DIRECTION directionToT3(TeamThreePoint from, TeamThreePoint to);
+DIRECTION getDFSDirT3(Racer* car, stack<TeamThreePoint>& path, set<TeamThreePoint>& visited,
+        TeamThreePoint& current, TeamThreePoint& endPt, TeamThreePoint& startPt,
+        map<TeamThreePoint, vector<TeamThreePoint>>& graph, vector<DIRECTION>& bestPath,
+        size_t& bestPathIdx, bool& replayShortestPath, bool endPointKnown, const int run);
 
 class RaceCarDriver{
 private:
@@ -127,15 +121,15 @@ public:
 
                 if (!bestPath.empty()) {
                     DIRECTION dir = bestPath[bestPathIdx++];
-                    current = nextPoint(current, dir);
+                    current = nextPointT3(current, dir);
                     return dir;
                 }
 
-                return firstOpenDirection(car);
+                return firstOpenDirectionT3(car);
             }
 
             current = startingPoint;
-            resetDfsState(path, visited);
+            resetDfsStateT3(path, visited);
             path.push(startingPoint);
             visited.emplace(startingPoint);
             bestPathIdx = 0;
@@ -146,43 +140,45 @@ public:
 		switch (run) {
             // RUN DFS to only find the finish
             case 0: {
-				DIRECTION dir = getDFSDir(car, path, visited, current, endPoint, startingPoint, graph, bestPath, bestPathIdx, replayShortestPath, endPointKnown, run);
+				DIRECTION dir = getDFSDirT3(car, path, visited, current,
+				    endPoint, startingPoint, graph, bestPath,
+				    bestPathIdx, replayShortestPath, endPointKnown, run);
 				return dir;
                 break;
             }
 
             // RUN DFS to create the topology (do not go to the finish)
             case 1: {
-                addCurrentCellToGraph(car, graph, current);
+                addCurrentCellToGraphT3(car, graph, current);
 
                 // We replay the shortest path after we found topology
                 if (replayShortestPath) {
                     if (bestPathIdx < bestPath.size()) {
                         DIRECTION dir = bestPath[bestPathIdx++];
-                        current = nextPoint(current, dir);
+                        current = nextPointT3(current, dir);
                         return dir;
                     }
 
                     replayShortestPath = false;
-                    return firstOpenDirection(car);
+                    return firstOpenDirectionT3(car);
                 }
                 // Once DFS has fully explored the maze and returned to the start
                 // Generate the shortest path from start to finish and begin replaying it.
                 if (current == startingPoint &&
                     path.size() == 1 &&
-                    !hasUnvisitedMove(car, current, visited, endPoint, endPointKnown)) {
-                    buildBestPath(graph, startingPoint, endPoint, bestPath);
+                    !hasUnvisitedMoveT3(car, current, visited, endPoint, endPointKnown)) {
+                    buildBestPathT3(graph, startingPoint, endPoint, bestPath);
                     bestPathIdx = 0;
                     replayShortestPath = true;
 
                     if (bestPathIdx < bestPath.size()) {
                         DIRECTION dir = bestPath[bestPathIdx++];
-                        current = nextPoint(current, dir);
+                        current = nextPointT3(current, dir);
                         return dir;
                     }
                 }
 
-                DIRECTION dir = getDFSDir(car, path, visited, current, endPoint,
+                DIRECTION dir = getDFSDirT3(car, path, visited, current, endPoint,
                     startingPoint, graph, bestPath, bestPathIdx, replayShortestPath,
                     endPointKnown, run);
 
@@ -193,7 +189,7 @@ public:
             case 2: {
                 if (bestPathIdx < bestPath.size()) {
                     DIRECTION dir = bestPath[bestPathIdx++];
-                    current = nextPoint(current, dir);
+                    current = nextPointT3(current, dir);
                     return dir;
                 }
 
@@ -203,7 +199,7 @@ public:
             // Our default is just running DFS, cause why not
             // We should never get here if he only runs 3 runs
             default: {
-				DIRECTION dir = getDFSDir(car, path, visited, current, endPoint,
+				DIRECTION dir = getDFSDirT3(car, path, visited, current, endPoint,
 				    startingPoint, graph, bestPath, bestPathIdx,
 				    replayShortestPath, endPointKnown, run);
 				return dir;
@@ -216,7 +212,7 @@ public:
     }
 };
 
-void addCurrentCellToGraph(Racer* car, map<TeamThreePoint, vector<TeamThreePoint>>& graph, TeamThreePoint currPos) {
+void addCurrentCellToGraphT3(Racer* car, map<TeamThreePoint, vector<TeamThreePoint>>& graph, TeamThreePoint currPos) {
     graph[currPos] = {};
 
     if (!car->look(EAST)) {
@@ -236,7 +232,7 @@ void addCurrentCellToGraph(Racer* car, map<TeamThreePoint, vector<TeamThreePoint
     }
 }
 
-TeamThreePoint nextPoint(TeamThreePoint p, DIRECTION d) {
+TeamThreePoint nextPointT3(TeamThreePoint p, DIRECTION d) {
     if (d == EAST) p.x++;
     else if (d == SOUTH) p.y++;
     else if (d == WEST) p.x--;
@@ -244,12 +240,12 @@ TeamThreePoint nextPoint(TeamThreePoint p, DIRECTION d) {
     return p;
 }
 
-void resetDfsState(stack<TeamThreePoint>& path, set<TeamThreePoint>& visited) {
+void resetDfsStateT3(stack<TeamThreePoint>& path, set<TeamThreePoint>& visited) {
     while (!path.empty()) path.pop();
     visited.clear();
 }
 
-bool hasUnvisitedMove(
+bool hasUnvisitedMoveT3(
     Racer* car,
         const TeamThreePoint& current,
         const set<TeamThreePoint>& visited,
@@ -260,7 +256,7 @@ bool hasUnvisitedMove(
     // Check if this cell still has a new place to go
     for (DIRECTION dir : DIRECTIONS) {
         if (!car->look(dir)) {
-            TeamThreePoint next = nextPoint(current, dir);
+            TeamThreePoint next = nextPointT3(current, dir);
             if (visited.count(next) == 0 && (!endPointKnown || !(next == endPt))) {
                 return true;
             }
@@ -270,7 +266,7 @@ bool hasUnvisitedMove(
     return false;
 }
 
-void buildBestPath(
+void buildBestPathT3(
         const map<TeamThreePoint, vector<TeamThreePoint>>& graph,
         const TeamThreePoint& start,
         const TeamThreePoint& finish,
@@ -355,7 +351,7 @@ void buildBestPath(
     TeamThreePoint step = finish;
     while (!(step == start)) {
         TeamThreePoint parent = prev[step];
-        reversedPath.push_back(directionTo(parent, step));
+        reversedPath.push_back(directionToT3(parent, step));
         step = parent;
     }
 
@@ -363,14 +359,14 @@ void buildBestPath(
     bestPath = reversedPath;
 }
 
-DIRECTION directionTo(TeamThreePoint from, TeamThreePoint to) {
+DIRECTION directionToT3(TeamThreePoint from, TeamThreePoint to) {
     if (to.x > from.x) return EAST;
     if (to.x < from.x) return WEST;
     if (to.y > from.y) return SOUTH;
     return NORTH;
 }
 
-DIRECTION getDFSDir(
+DIRECTION getDFSDirT3(
         Racer* car,
         stack<TeamThreePoint>& path,
         set<TeamThreePoint>& visited,
@@ -388,7 +384,7 @@ DIRECTION getDFSDir(
     // Decision
     for (DIRECTION dir: DIRECTIONS) {
         if (!car->look(dir)) {
-            TeamThreePoint next = nextPoint(current, dir);
+            TeamThreePoint next = nextPointT3(current, dir);
             if (visited.count(next) == 0
                 && (!endPointKnown || !bestPath.empty() || !(next == endPt))) {
                 path.push(next);
@@ -406,13 +402,13 @@ DIRECTION getDFSDir(
         TeamThreePoint parent = path.top();
         current = parent;
 
-        // Old stuff here moved to case 1
+        // Old stuff here I moved to case 1
 
-        DIRECTION dir = directionTo(child, parent);
+        DIRECTION dir = directionToT3(child, parent);
         return dir;    
     }
 
-    return firstOpenDirection(car);
+    return firstOpenDirectionT3(car);
 }
 
 #endif /* RACECARDRIVER_H_ */

@@ -104,7 +104,7 @@ int i = 1;
 clock.reset();
     while (!g.getQuit()  && runCount < 3)
     {
-		g.Sleep(10);
+		//g.Sleep(50);
 		if(robot.racing() and !robot.Finished()){
 
 			if(g.kbhit()){
