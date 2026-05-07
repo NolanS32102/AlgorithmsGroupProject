@@ -71,6 +71,9 @@ int main(int argc, char ** argv)
     Uint32 RGB;
     SDL_Plotter g(row*block+2*buffer,col*block+2*buffer);
     Racer robot(&g);
+	point startPoint(2, 2);
+	robot.setLocation(startPoint);
+	robot.setPrevLocation(startPoint);
     RaceCarDriver driver(&robot);
 
 
@@ -101,7 +104,7 @@ int i = 1;
 clock.reset();
     while (!g.getQuit()  && runCount < 3)
     {
-
+		//g.Sleep(50);
 		if(robot.racing() and !robot.Finished()){
 
 			if(g.kbhit()){
@@ -117,18 +120,18 @@ clock.reset();
 					case DOWN_ARROW:  robot.move(SOUTH); break;
 
 				}
-				robot.move(driver.nextMoveTeamThree());
+				robot.move(driver.nextMoveTeamThree(runCount));
 				legalMove(robot, walls);
 				robot.draw(g);
 				g.update();
-				// g.Sleep(10000);
+				//g.Sleep(500);
 
 			}
 
 			if(g.mouseClick()){
 			}
 
-			robot.move(driver.nextMoveTeamThree());
+			robot.move(driver.nextMoveTeamThree(runCount));
 			legalMove(robot, walls);
 			robot.draw(g);
 			g.update();
@@ -143,8 +146,8 @@ clock.reset();
 			clock.reset();
 			runCount++;
 			robot.setAlive(true);
-			robot.setLocation(point(0,0));
-			robot.setPrevLocation(point(0,0));
+			robot.setLocation(startPoint);
+			robot.setPrevLocation(startPoint);
 			robot.setFinished(false);
 			g.clear();
 			drawMaze(walls,g);
