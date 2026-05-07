@@ -272,8 +272,8 @@ public:
                 return NORTH;
             }
 
-            // Our default is just running DFS, cause why not
-            // We should never get here if he only runs 3 runs
+            // Our default is just running DFS
+            // We should never get here if there are only 3 runs
             default: {
 				DIRECTION dir = getDFSDirTeamThree(car, path, visited, current, endPoint,
 				    startingPoint, graph, bestPath, bestPathIdx,
